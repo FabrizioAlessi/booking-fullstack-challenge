@@ -1,0 +1,76 @@
+<section class="booking-page">
+  <header class="booking-page__header">
+    <h1>Booking Challenge</h1>
+    <p>Seleziona una data, scegli uno slot libero e crea la prenotazione.</p>
+  </header>
+
+  <form class="booking-form" [formGroup]="form" (ngSubmit)="submit()">
+    <label>
+      Data
+      <input type="date" formControlName="date" (change)="onDateChange()" />
+    </label>
+
+    <label>
+      Nome
+      <input type="text" formControlName="name" autocomplete="name" />
+    </label>
+
+    <label>
+      Nota (opzionale)
+      <input type="text" formControlName="note" />
+    </label>
+
+    <fieldset class="slot-list">
+      <legend>Slot</legend>
+      <div class="slot-list__grid">
+        @for (slot of timeSlots; track slot) {
+          <button
+            type="button"
+            class="slot"
+            [class.slot--selected]="form.controls.time_slot.value === slot"
+            [class.slot--booked]="slotStatus(slot) === 'BOOKED'"
+            [disabled]="slotStatus(slot) === 'BOOKED' || loading"
+            (click)="selectSlot(slot)"
+          >
+            {{ slot }}
+            <span>{{ slotStatus(slot) === 'BOOKED' ? 'Occupato' : 'Libero' }}</span>
+          </button>
+        }
+      </div>
+    </fieldset>
+
+    <button type="submit" [disabled]="loading || form.invalid">
+      {{ loading ? 'Attendere…' : 'Prenota' }}
+    </button>
+  </form>
+
+  @if (feedback) {
+    <p class="feedback feedback--ok" role="status">{{ feedback }}</p>
+  }
+  @if (errorMessage) {
+    <p class="feedback feedback--error" role="alert">{{ errorMessage }}</p>
+  }
+
+  <section class="booking-list">
+    <h2>Prenotazioni del giorno</h2>
+    @if (bookings.length === 0) {
+      <p>Nessuna prenotazione per questa data.</p>
+    } @else {
+      <ul>
+        @for (booking of bookings; track booking.id) {
+          <li>
+            <div>
+              <strong>{{ booking.time_slot }}</strong> — {{ booking.name }}
+              @if (booking.note) {
+                <span class="note">{{ booking.note }}</span>
+              }
+            </div>
+            <button type="button" [disabled]="loading" (click)="deleteBooking(booking)">
+              Elimina
+            </button>
+          </li>
+        }
+      </ul>
+    }
+  </section>
+</section>
