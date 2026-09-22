@@ -161,6 +161,16 @@ export class BookingPageComponent implements OnInit, OnDestroy {
     return this.loading || status === 'BOOKED' || status === 'LOCKED_BY_OTHER';
   }
 
+  /** Slot currently chosen in the form (selected or locked-by-me). */
+  isSlotSelected(slot: TimeSlot): boolean {
+    return this.form.controls.time_slot.value === slot || this.slotStatus(slot) === 'LOCKED_BY_ME';
+  }
+
+  /** In edit mode, the active slot uses warning highlight (same as Modifica). */
+  isEditingSelectedSlot(slot: TimeSlot): boolean {
+    return this.isEditing && this.form.controls.time_slot.value === slot;
+  }
+
   selectSlot(slot: TimeSlot): void {
     const status = this.slotStatus(slot);
     if (this.loading || status === 'BOOKED' || status === 'LOCKED_BY_OTHER') {

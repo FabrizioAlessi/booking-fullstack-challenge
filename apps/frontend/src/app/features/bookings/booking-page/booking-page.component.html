@@ -85,23 +85,18 @@
           <button
             type="button"
             class="grid gap-0.5 rounded border border-line-focus bg-surface-raised px-2 py-2.5 font-inherit cursor-pointer disabled:cursor-not-allowed disabled:bg-surface-sunken disabled:opacity-55"
-            [class.border-brand-500]="
-              form.controls.time_slot.value === slot || slotStatus(slot) === 'LOCKED_BY_ME'
+            [class.border-brand-500]="isSlotSelected(slot) && !isEditingSelectedSlot(slot)"
+            [class.ring-1]="isSlotSelected(slot)"
+            [class.ring-inset]="isSlotSelected(slot)"
+            [class.ring-brand-500]="isSlotSelected(slot) && !isEditingSelectedSlot(slot)"
+            [class.bg-brand-50]="isSlotSelected(slot) && !isEditingSelectedSlot(slot)"
+            [class.border-warning]="
+              isEditingSelectedSlot(slot) || slotStatus(slot) === 'LOCKED_BY_OTHER'
             "
-            [class.ring-1]="
-              form.controls.time_slot.value === slot || slotStatus(slot) === 'LOCKED_BY_ME'
+            [class.ring-warning]="isEditingSelectedSlot(slot)"
+            [class.bg-warning-soft]="
+              isEditingSelectedSlot(slot) || slotStatus(slot) === 'LOCKED_BY_OTHER'
             "
-            [class.ring-inset]="
-              form.controls.time_slot.value === slot || slotStatus(slot) === 'LOCKED_BY_ME'
-            "
-            [class.ring-brand-500]="
-              form.controls.time_slot.value === slot || slotStatus(slot) === 'LOCKED_BY_ME'
-            "
-            [class.bg-brand-50]="
-              slotStatus(slot) === 'LOCKED_BY_ME' || form.controls.time_slot.value === slot
-            "
-            [class.border-warning]="slotStatus(slot) === 'LOCKED_BY_OTHER'"
-            [class.bg-warning-soft]="slotStatus(slot) === 'LOCKED_BY_OTHER'"
             [class.cursor-not-allowed]="slotStatus(slot) === 'LOCKED_BY_OTHER'"
             [class.opacity-70]="slotStatus(slot) === 'LOCKED_BY_OTHER'"
             [class.bg-surface-sunken]="slotStatus(slot) === 'BOOKED'"
@@ -192,7 +187,11 @@
           <ul class="m-0 grid list-none gap-2.5 p-0">
             @for (booking of bookings; track booking.id) {
               <li
-                class="flex items-center justify-between gap-4 border-b border-line py-2.5 text-ink last:border-b-0"
+                class="flex items-center justify-between gap-4 rounded border border-transparent px-2.5 py-2.5 text-ink"
+                [class.border-warning]="editingId === booking.id"
+                [class.bg-warning-soft]="editingId === booking.id"
+                [class.ring-1]="editingId === booking.id"
+                [class.ring-warning]="editingId === booking.id"
               >
                 <div>
                   <strong>{{ booking.time_slot }}</strong> — {{ booking.name }}
@@ -203,7 +202,7 @@
                 <div class="flex shrink-0 flex-wrap items-center gap-2">
                   <button
                     type="button"
-                    class="inline-flex items-center gap-1.5 rounded border border-line-strong bg-surface-raised px-3 py-2 font-inherit text-ink cursor-pointer hover:bg-surface-sunken disabled:cursor-not-allowed disabled:opacity-60"
+                    class="inline-flex items-center gap-1.5 rounded border-0 bg-warning px-3 py-2 font-inherit text-ink-inverse cursor-pointer hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
                     [disabled]="loading"
                     (click)="startEdit(booking)"
                   >
