@@ -7,7 +7,7 @@ Il vincolo `date + time_slot` è garantito da un indice univoco MongoDB; i confl
 
 - Node.js 22 (vedi `.nvmrc`)
 - npm 10+
-- Cluster [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) (free tier va bene)
+- Cluster [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) (free tier)
 
 ## Setup rapido
 
@@ -39,6 +39,7 @@ URL locali:
 | `npm run build` | Build TypeScript backend + build Angular |
 | `npm run lint` | ESLint su backend e frontend |
 | `npm test` | Test API backend (Vitest + Supertest + Mongo in-memory) |
+| `npm run test:frontend` | Test unitari Angular (Karma; Chrome o Edge via `CHROME_BIN`) |
 | `npm run format` | Prettier |
 
 ## Endpoint principali

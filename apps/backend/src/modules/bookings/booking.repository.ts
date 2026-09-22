@@ -1,3 +1,4 @@
+import { Types } from 'mongoose';
 import { ConflictError, NotFoundError } from '../../errors/AppError.js';
 import { BookingModel, type BookingDocument } from './booking.model.js';
 import type { CreateBookingInput, UpdateBookingInput } from './booking.types.js';
@@ -25,6 +26,12 @@ function toConflictError(error: DuplicateKeyLike): ConflictError {
   );
 }
 
+function assertObjectId(id: string): void {
+  if (!Types.ObjectId.isValid(id)) {
+    throw new NotFoundError();
+  }
+}
+
 export class BookingRepository {
   async create(input: CreateBookingInput): Promise<BookingDocument> {
     try {
@@ -42,10 +49,15 @@ export class BookingRepository {
   }
 
   async findById(id: string): Promise<BookingDocument | null> {
+    if (!Types.ObjectId.isValid(id)) {
+      return null;
+    }
     return BookingModel.findById(id).exec();
   }
 
   async updateById(id: string, input: UpdateBookingInput): Promise<BookingDocument> {
+    assertObjectId(id);
+
     try {
       const updated = await BookingModel.findByIdAndUpdate(id, input, {
         new: true,
@@ -58,6 +70,9 @@ export class BookingRepository {
 
       return updated;
     } catch (error) {
+      if (error instanceof NotFoundError) {
+        throw error;
+      }
       if (isDuplicateKeyError(error)) {
         throw toConflictError(error);
       }
@@ -66,6 +81,7 @@ export class BookingRepository {
   }
 
   async deleteById(id: string): Promise<void> {
+    assertObjectId(id);
     const deleted = await BookingModel.findByIdAndDelete(id).exec();
     if (!deleted) {
       throw new NotFoundError();

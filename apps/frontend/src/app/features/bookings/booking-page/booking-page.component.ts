@@ -51,6 +51,7 @@ export class BookingPageComponent implements OnInit {
   }
 
   onDateChange(): void {
+    this.form.controls.time_slot.setValue('');
     this.reloadBookings();
   }
 
@@ -81,24 +82,23 @@ export class BookingPageComponent implements OnInit {
           this.reloadBookings();
         },
         error: (error: { status?: number; code?: string; message?: string }) => {
-          this.loading = false;
           if (error.status === 409 || error.code === 'BOOKING_SLOT_CONFLICT') {
             this.errorMessage =
               'Questo slot e stato appena prenotato da un altro utente.';
             this.reloadBookings();
             return;
           }
-          this.errorMessage = error.message ?? 'Errore durante la creazione.';
-        },
-        complete: () => {
           this.loading = false;
+          this.errorMessage = error.message ?? 'Errore durante la creazione.';
         },
       });
   }
 
   deleteBooking(booking: Booking): void {
     this.loading = true;
+    this.feedback = null;
     this.errorMessage = null;
+
     this.bookingApi.delete(booking.id).subscribe({
       next: () => {
         this.feedback = 'Prenotazione eliminata.';
@@ -108,13 +108,10 @@ export class BookingPageComponent implements OnInit {
         this.loading = false;
         this.errorMessage = error.message ?? 'Errore durante l’eliminazione.';
       },
-      complete: () => {
-        this.loading = false;
-      },
     });
   }
 
-  private reloadBookings(): void {
+  reloadBookings(): void {
     const date = this.form.controls.date.value;
     if (!date) {
       return;
