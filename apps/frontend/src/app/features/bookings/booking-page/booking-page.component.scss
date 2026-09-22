@@ -63,9 +63,21 @@ input {
   color: #556;
 }
 
-.slot--selected {
+.slot--selected,
+.slot--mine {
   border-color: #1f6feb;
   box-shadow: inset 0 0 0 1px #1f6feb;
+}
+
+.slot--mine {
+  background: #eef5ff;
+}
+
+.slot--locked {
+  opacity: 0.7;
+  cursor: not-allowed;
+  background: #fff4e5;
+  border-color: #d9892b;
 }
 
 .slot--booked,

@@ -40,3 +40,20 @@ export class ValidationAppError extends AppError {
     this.name = 'ValidationAppError';
   }
 }
+
+export class SlotLockConflictError extends ConflictError {
+  constructor(message = 'The selected time slot is temporarily locked', details?: unknown) {
+    super('SLOT_LOCK_CONFLICT', message, details);
+    this.name = 'SlotLockConflictError';
+  }
+}
+
+export class SlotLockInvalidError extends AppError {
+  constructor(
+    message = 'Slot lock is missing, expired, or does not match the booking',
+    details?: unknown,
+  ) {
+    super(409, 'SLOT_LOCK_INVALID', message, details);
+    this.name = 'SlotLockInvalidError';
+  }
+}

@@ -1,1 +1,8 @@
-export { AppError, ConflictError, NotFoundError, ValidationAppError } from './AppError.js';
+export {
+  AppError,
+  ConflictError,
+  NotFoundError,
+  ValidationAppError,
+  SlotLockConflictError,
+  SlotLockInvalidError,
+} from './AppError.js';

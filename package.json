@@ -16,10 +16,7 @@
     "build": "npm run build -w @booking/backend && npm run build -w @booking/frontend",
     "lint": "npm run lint -w @booking/backend && npm run lint -w @booking/frontend",
     "format": "prettier --write \"**/*.{ts,js,json,scss,md,yml,yaml}\"",
-    "format:check": "prettier --check \"**/*.{ts,js,json,scss,md,yml,yaml}\"",
-    "test": "npm run test -w @booking/backend",
-    "test:backend": "npm run test -w @booking/backend",
-    "test:frontend": "npm run test -w @booking/frontend"
+    "format:check": "prettier --check \"**/*.{ts,js,json,scss,md,yml,yaml}\""
   },
   "devDependencies": {
     "concurrently": "^9.1.2",

@@ -6,28 +6,48 @@ import {
   ApiSuccess,
   Booking,
   CreateBookingPayload,
+  SlotLock,
 } from '../../shared/models/booking';
 
 @Injectable({ providedIn: 'root' })
 export class BookingApiService {
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = '/api/bookings';
+  private readonly bookingsUrl = '/api/bookings';
+  private readonly locksUrl = '/api/slot-locks';
 
   listByDate(date: string): Observable<ApiSuccess<Booking[]>> {
     return this.http
-      .get<ApiSuccess<Booking[]>>(this.baseUrl, { params: { date } })
+      .get<ApiSuccess<Booking[]>>(this.bookingsUrl, { params: { date } })
       .pipe(catchError((error) => this.mapError(error)));
   }
 
   create(payload: CreateBookingPayload): Observable<ApiSuccess<Booking>> {
     return this.http
-      .post<ApiSuccess<Booking>>(this.baseUrl, payload)
+      .post<ApiSuccess<Booking>>(this.bookingsUrl, payload)
       .pipe(catchError((error) => this.mapError(error)));
   }
 
   delete(id: string): Observable<void> {
     return this.http
-      .delete<void>(`${this.baseUrl}/${id}`)
+      .delete<void>(`${this.bookingsUrl}/${id}`)
+      .pipe(catchError((error) => this.mapError(error)));
+  }
+
+  listLocks(date: string): Observable<ApiSuccess<SlotLock[]>> {
+    return this.http
+      .get<ApiSuccess<SlotLock[]>>(this.locksUrl, { params: { date } })
+      .pipe(catchError((error) => this.mapError(error)));
+  }
+
+  acquireLock(date: string, time_slot: string): Observable<ApiSuccess<SlotLock>> {
+    return this.http
+      .post<ApiSuccess<SlotLock>>(this.locksUrl, { date, time_slot })
+      .pipe(catchError((error) => this.mapError(error)));
+  }
+
+  releaseLock(lockId: string): Observable<void> {
+    return this.http
+      .delete<void>(`${this.locksUrl}/${lockId}`)
       .pipe(catchError((error) => this.mapError(error)));
   }
 

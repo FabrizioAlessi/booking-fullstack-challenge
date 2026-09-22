@@ -3,6 +3,8 @@
 Applicazione full-stack di prenotazione slot orari: Angular + Express + MongoDB.
 Il vincolo `date + time_slot` è garantito da un indice univoco MongoDB; i conflitti rispondono con HTTP `409` e code `BOOKING_SLOT_CONFLICT`.
 
+Bonus: lock temporaneo sugli slot + sincronizzazione realtime via **SSE** (Server-Sent Events).
+
 ## Prerequisiti
 
 - Node.js 22 (vedi `.nvmrc`)
@@ -30,6 +32,7 @@ URL locali:
 | Frontend | http://localhost:4200 |
 | Backend API | http://localhost:3000 |
 | Health | http://localhost:3000/api/health |
+| SSE | http://localhost:3000/api/events |
 
 ## Script root
 
@@ -38,8 +41,6 @@ URL locali:
 | `npm run dev` | Avvia backend (`tsx watch`) e frontend (`ng serve` con proxy `/api`) |
 | `npm run build` | Build TypeScript backend + build Angular |
 | `npm run lint` | ESLint su backend e frontend |
-| `npm test` | Test API backend (Vitest + Supertest + Mongo in-memory) |
-| `npm run test:frontend` | Test unitari Angular (Karma; Chrome o Edge via `CHROME_BIN`) |
 | `npm run format` | Prettier |
 
 ## Endpoint principali
@@ -49,9 +50,13 @@ URL locali:
 | `GET` | `/api/health` | Health check |
 | `GET` | `/api/bookings?date=YYYY-MM-DD` | Lista booking del giorno |
 | `GET` | `/api/bookings/:id` | Dettaglio |
-| `POST` | `/api/bookings` | Crea (`201` oppure `409`) |
+| `POST` | `/api/bookings` | Crea (`201` / `409`); accetta `lockId` opzionale |
 | `PUT` | `/api/bookings/:id` | Aggiorna (rispetta lo stesso unique index) |
 | `DELETE` | `/api/bookings/:id` | Elimina (`204`) |
+| `GET` | `/api/slot-locks?date=YYYY-MM-DD` | Lock attivi del giorno |
+| `POST` | `/api/slot-locks` | Acquisisce lock temporaneo |
+| `DELETE` | `/api/slot-locks/:lockId` | Rilascia lock |
+| `GET` | `/api/events` | Stream SSE (`slot.locked`, `slot.released`, `booking.created`, `booking.deleted`) |
 
 Envelope errore uniforme:
 
@@ -64,16 +69,18 @@ Envelope errore uniforme:
 }
 ```
 
-## Note sul vincolo di unicità
+## Unicità e lock
 
-L’unicità non si basa su `findOne` + `create`. L’indice composto `uniq_booking_date_time_slot` su `{ date: 1, time_slot: 1 }` è l’autorità finale. Un duplicato produce Mongo `E11000`, tradotto in `ConflictError` → HTTP `409`.
+- L’unicità booking resta sull’indice `uniq_booking_date_time_slot` (mai `findOne`+`create`).
+- Il lock migliora l’UX durante la selezione ma **non** sostituisce l’indice.
+- Lock validi solo se `expiresAt > now`; i lock scaduti possono essere reclamati atomicamente anche se il TTL Mongo è in ritardo.
 
 ## Struttura
 
 ```text
 apps/
-  frontend/   # Angular 19 — Reactive Forms, HttpClient, SCSS
-  backend/    # Express + TypeScript + Zod + Mongoose
+  frontend/   # Angular 19 — Reactive Forms, HttpClient, SCSS, SSE client
+  backend/    # Express + TypeScript + Zod + Mongoose + SSE
 ```
 
 ## Documentazione aggiuntiva

@@ -1,7 +1,10 @@
 <section class="booking-page">
   <header class="booking-page__header">
     <h1>Booking Challenge</h1>
-    <p>Seleziona una data, scegli uno slot libero e crea la prenotazione.</p>
+    <p>
+      Seleziona una data, blocca uno slot libero e crea la prenotazione. Gli aggiornamenti
+      arrivano in tempo reale via SSE.
+    </p>
   </header>
 
   <form class="booking-form" [formGroup]="form" (ngSubmit)="submit()">
@@ -29,17 +32,19 @@
             class="slot"
             [class.slot--selected]="form.controls.time_slot.value === slot"
             [class.slot--booked]="slotStatus(slot) === 'BOOKED'"
-            [disabled]="slotStatus(slot) === 'BOOKED' || loading"
+            [class.slot--mine]="slotStatus(slot) === 'LOCKED_BY_ME'"
+            [class.slot--locked]="slotStatus(slot) === 'LOCKED_BY_OTHER'"
+            [disabled]="isSlotDisabled(slot)"
             (click)="selectSlot(slot)"
           >
             {{ slot }}
-            <span>{{ slotStatus(slot) === 'BOOKED' ? 'Occupato' : 'Libero' }}</span>
+            <span>{{ slotLabel(slot) }}</span>
           </button>
         }
       </div>
     </fieldset>
 
-    <button type="submit" [disabled]="loading || form.invalid">
+    <button type="submit" [disabled]="loading || form.invalid || !myLock">
       {{ loading ? 'Attendere…' : 'Prenota' }}
     </button>
   </form>

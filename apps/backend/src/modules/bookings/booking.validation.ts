@@ -8,6 +8,7 @@ export const createBookingSchema = z.object({
   date: z.string().regex(dateRegex, 'date must be YYYY-MM-DD'),
   time_slot: z.string().regex(timeSlotRegex, 'time_slot must be HH:mm'),
   note: z.string().trim().max(500).optional(),
+  lockId: z.string().uuid().optional(),
 });
 
 export const updateBookingSchema = z

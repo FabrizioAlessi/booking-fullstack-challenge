@@ -9,9 +9,7 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/server.js",
-    "lint": "eslint \"src/**/*.ts\" \"tests/**/*.ts\"",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "lint": "eslint \"src/**/*.ts\""
   },
   "engines": {
     "node": ">=22"
@@ -28,13 +26,9 @@
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
     "@types/node": "^22.13.10",
-    "@types/supertest": "^6.0.2",
     "eslint": "^9.22.0",
-    "mongodb-memory-server": "^10.1.4",
-    "supertest": "^7.0.0",
     "tsx": "^4.19.3",
     "typescript": "^5.8.2",
-    "typescript-eslint": "^8.26.1",
-    "vitest": "^3.0.8"
+    "typescript-eslint": "^8.26.1"
   }
 }

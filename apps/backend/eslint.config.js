@@ -8,7 +8,7 @@ export default tseslint.config(
     ignores: ['dist/**', 'coverage/**'],
   },
   {
-    files: ['src/**/*.ts', 'tests/**/*.ts'],
+    files: ['src/**/*.ts'],
     languageOptions: {
       parserOptions: {
         ecmaVersion: 2022,

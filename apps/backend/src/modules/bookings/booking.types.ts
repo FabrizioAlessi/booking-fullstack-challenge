@@ -13,6 +13,7 @@ export interface CreateBookingInput {
   date: string;
   time_slot: string;
   note?: string;
+  lockId?: string;
 }
 
 export interface UpdateBookingInput {

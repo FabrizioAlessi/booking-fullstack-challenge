@@ -5,7 +5,9 @@ import type {
   CreateBookingInput,
   UpdateBookingInput,
 } from './booking.types.js';
-import { NotFoundError } from '../../errors/AppError.js';
+import { NotFoundError, SlotLockInvalidError } from '../../errors/AppError.js';
+import { realtimeHub } from '../../realtime/realtime-hub.js';
+import { slotLockRepository } from '../slot-locks/slot-lock.repository.js';
 
 function toBookingDto(doc: BookingDocument): BookingDto {
   return {
@@ -23,8 +25,42 @@ export class BookingService {
   constructor(private readonly repository: BookingRepository = bookingRepository) {}
 
   async create(input: CreateBookingInput): Promise<BookingDto> {
-    const created = await this.repository.create(input);
-    return toBookingDto(created);
+    const { lockId, ...bookingInput } = input;
+
+    if (lockId) {
+      const lock = await slotLockRepository.findActiveByLockId(lockId);
+      if (
+        !lock ||
+        lock.date !== bookingInput.date ||
+        lock.time_slot !== bookingInput.time_slot
+      ) {
+        throw new SlotLockInvalidError();
+      }
+    }
+
+    const created = await this.repository.create(bookingInput);
+    const dto = toBookingDto(created);
+
+    if (lockId) {
+      const released = await slotLockRepository.deleteByLockId(lockId);
+      if (released) {
+        realtimeHub.publish({
+          type: 'slot.released',
+          payload: {
+            date: released.date,
+            time_slot: released.time_slot,
+            lockId: released.lockId,
+          },
+        });
+      }
+    }
+
+    realtimeHub.publish({
+      type: 'booking.created',
+      payload: dto,
+    });
+
+    return dto;
   }
 
   async listByDate(date: string): Promise<BookingDto[]> {
@@ -46,7 +82,20 @@ export class BookingService {
   }
 
   async remove(id: string): Promise<void> {
+    const existing = await this.repository.findById(id);
+    if (!existing) {
+      throw new NotFoundError();
+    }
+
     await this.repository.deleteById(id);
+    realtimeHub.publish({
+      type: 'booking.deleted',
+      payload: {
+        id: existing.id,
+        date: existing.date,
+        time_slot: existing.time_slot,
+      },
+    });
   }
 }
 

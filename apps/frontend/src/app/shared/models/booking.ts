@@ -13,6 +13,14 @@ export interface CreateBookingPayload {
   date: string;
   time_slot: string;
   note?: string;
+  lockId?: string;
+}
+
+export interface SlotLock {
+  lockId: string;
+  date: string;
+  time_slot: string;
+  expiresAt: string;
 }
 
 export interface ApiSuccess<T> {
@@ -39,4 +47,4 @@ export const TIME_SLOTS = [
 ] as const;
 
 export type TimeSlot = (typeof TIME_SLOTS)[number];
-export type SlotStatus = 'AVAILABLE' | 'BOOKED';
+export type SlotStatus = 'AVAILABLE' | 'LOCKED_BY_ME' | 'LOCKED_BY_OTHER' | 'BOOKED';
