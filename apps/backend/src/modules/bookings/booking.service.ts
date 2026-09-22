@@ -44,6 +44,7 @@ export class BookingService {
     if (lockId) {
       const released = await slotLockRepository.deleteByLockId(lockId);
       if (released) {
+        realtimeHub.unbindLock(lockId);
         realtimeHub.publish({
           type: 'slot.released',
           payload: {

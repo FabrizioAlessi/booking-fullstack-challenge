@@ -136,7 +136,7 @@ export class BookingPageComponent implements OnInit, OnDestroy {
     const previousLock = this.myLock;
     const date = this.form.controls.date.value;
 
-    this.bookingApi.acquireLock(date, slot).subscribe({
+    this.bookingApi.acquireLock(date, slot, this.realtime.clientId).subscribe({
       next: (response) => {
         this.myLock = response.data;
         this.form.controls.time_slot.setValue(slot);

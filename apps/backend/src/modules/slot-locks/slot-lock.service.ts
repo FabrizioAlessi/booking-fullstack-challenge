@@ -7,6 +7,7 @@ export class SlotLockService {
 
   async acquire(input: AcquireSlotLockInput): Promise<SlotLockDto> {
     const lock = await this.repository.acquire(input);
+    realtimeHub.bindLock(input.clientId, lock.lockId);
     realtimeHub.publish({
       type: 'slot.locked',
       payload: lock,
@@ -20,6 +21,7 @@ export class SlotLockService {
 
   async release(lockId: string): Promise<SlotLockDto> {
     const lock = await this.repository.releaseByLockId(lockId);
+    realtimeHub.unbindLock(lockId);
     realtimeHub.publish({
       type: 'slot.released',
       payload: {

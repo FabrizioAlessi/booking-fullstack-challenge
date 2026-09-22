@@ -39,9 +39,13 @@ export class BookingApiService {
       .pipe(catchError((error) => this.mapError(error)));
   }
 
-  acquireLock(date: string, time_slot: string): Observable<ApiSuccess<SlotLock>> {
+  acquireLock(
+    date: string,
+    time_slot: string,
+    clientId: string,
+  ): Observable<ApiSuccess<SlotLock>> {
     return this.http
-      .post<ApiSuccess<SlotLock>>(this.locksUrl, { date, time_slot })
+      .post<ApiSuccess<SlotLock>>(this.locksUrl, { date, time_slot, clientId })
       .pipe(catchError((error) => this.mapError(error)));
   }
 

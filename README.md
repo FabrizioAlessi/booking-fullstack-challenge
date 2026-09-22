@@ -32,7 +32,7 @@ URL locali:
 | Frontend | http://localhost:4200 |
 | Backend API | http://localhost:3000 |
 | Health | http://localhost:3000/api/health |
-| SSE | http://localhost:3000/api/events |
+| SSE | `GET /api/events?clientId=<uuid>` |
 
 ## Script root
 
@@ -54,9 +54,9 @@ URL locali:
 | `PUT` | `/api/bookings/:id` | Aggiorna (rispetta lo stesso unique index) |
 | `DELETE` | `/api/bookings/:id` | Elimina (`204`) |
 | `GET` | `/api/slot-locks?date=YYYY-MM-DD` | Lock attivi del giorno |
-| `POST` | `/api/slot-locks` | Acquisisce lock temporaneo |
+| `POST` | `/api/slot-locks` | Acquisisce lock temporaneo (`clientId` UUID obbligatorio) |
 | `DELETE` | `/api/slot-locks/:lockId` | Rilascia lock |
-| `GET` | `/api/events` | Stream SSE (`slot.locked`, `slot.released`, `booking.created`, `booking.deleted`) |
+| `GET` | `/api/events?clientId=` | Stream SSE; alla disconnect rilascia i lock del client |
 
 Envelope errore uniforme:
 
@@ -74,6 +74,7 @@ Envelope errore uniforme:
 - L’unicità booking resta sull’indice `uniq_booking_date_time_slot` (mai `findOne`+`create`).
 - Il lock migliora l’UX durante la selezione ma **non** sostituisce l’indice.
 - Lock validi solo se `expiresAt > now`; i lock scaduti possono essere reclamati atomicamente anche se il TTL Mongo è in ritardo.
+- Ogni client SSE ha un `clientId`; i lock acquisiti sono legati a quel client e vengono rilasciati automaticamente alla chiusura dello stream (refresh/chiusura tab).
 
 ## Struttura
 

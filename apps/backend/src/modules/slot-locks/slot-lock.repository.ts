@@ -35,9 +35,12 @@ export class SlotLockRepository {
     const lockId = createLockId();
     const expiresAt = nextExpiry(now);
 
+    const { date, time_slot } = input;
+
     try {
       const created = await SlotLockModel.create({
-        ...input,
+        date,
+        time_slot,
         lockId,
         expiresAt,
       });
@@ -51,8 +54,8 @@ export class SlotLockRepository {
     // Reclaim only if the existing lock is already expired (TTL may lag).
     const reclaimed = await SlotLockModel.findOneAndUpdate(
       {
-        date: input.date,
-        time_slot: input.time_slot,
+        date,
+        time_slot,
         expiresAt: { $lte: now },
       },
       {

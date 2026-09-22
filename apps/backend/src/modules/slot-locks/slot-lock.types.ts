@@ -8,4 +8,5 @@ export interface SlotLockDto {
 export interface AcquireSlotLockInput {
   date: string;
   time_slot: string;
+  clientId: string;
 }
