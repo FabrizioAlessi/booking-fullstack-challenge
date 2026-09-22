@@ -6,6 +6,7 @@ export type RealtimeEvent =
   | { type: 'slot.locked'; payload: SlotLock }
   | { type: 'slot.released'; payload: Pick<SlotLock, 'date' | 'time_slot' | 'lockId'> }
   | { type: 'booking.created'; payload: Booking }
+  | { type: 'booking.updated'; payload: Booking }
   | { type: 'booking.deleted'; payload: { id: string; date: string; time_slot: string } };
 
 const CLIENT_ID_STORAGE_KEY = 'booking.realtime.clientId';
@@ -44,6 +45,7 @@ export class RealtimeEventsService implements OnDestroy {
     this.source.addEventListener('slot.locked', forward('slot.locked'));
     this.source.addEventListener('slot.released', forward('slot.released'));
     this.source.addEventListener('booking.created', forward('booking.created'));
+    this.source.addEventListener('booking.updated', forward('booking.updated'));
     this.source.addEventListener('booking.deleted', forward('booking.deleted'));
   }
 

@@ -26,3 +26,4 @@
 5. Suite test automatici sia per backend che front-end.
 6. Integrazioni con tool esterni come Google Calendar o Calendly.
 7. Notification system (persistence o push + persistence), email SMTP per confermare o segnalare un appuntamento annullato.
+8. Architettura: dividere un due repository separate front-end e back-end in modo da avere più libertà per hosting e CI/CD

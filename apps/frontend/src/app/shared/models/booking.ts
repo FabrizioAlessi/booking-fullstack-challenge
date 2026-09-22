@@ -16,6 +16,14 @@ export interface CreateBookingPayload {
   lockId?: string;
 }
 
+export interface UpdateBookingPayload {
+  name?: string;
+  date?: string;
+  time_slot?: string;
+  /** `null` clears the note on the server. */
+  note?: string | null;
+}
+
 export interface SlotLock {
   lockId: string;
   date: string;

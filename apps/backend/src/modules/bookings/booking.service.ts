@@ -79,7 +79,14 @@ export class BookingService {
 
   async update(id: string, input: UpdateBookingInput): Promise<BookingDto> {
     const updated = await this.repository.updateById(id, input);
-    return toBookingDto(updated);
+    const dto = toBookingDto(updated);
+
+    realtimeHub.publish({
+      type: 'booking.updated',
+      payload: dto,
+    });
+
+    return dto;
   }
 
   async remove(id: string): Promise<void> {

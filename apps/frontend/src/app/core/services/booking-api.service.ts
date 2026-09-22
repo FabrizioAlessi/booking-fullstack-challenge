@@ -7,6 +7,7 @@ import {
   Booking,
   CreateBookingPayload,
   SlotLock,
+  UpdateBookingPayload,
 } from '../../shared/models/booking';
 
 @Injectable({ providedIn: 'root' })
@@ -24,6 +25,12 @@ export class BookingApiService {
   create(payload: CreateBookingPayload): Observable<ApiSuccess<Booking>> {
     return this.http
       .post<ApiSuccess<Booking>>(this.bookingsUrl, payload)
+      .pipe(catchError((error) => this.mapError(error)));
+  }
+
+  update(id: string, payload: UpdateBookingPayload): Observable<ApiSuccess<Booking>> {
+    return this.http
+      .put<ApiSuccess<Booking>>(`${this.bookingsUrl}/${id}`, payload)
       .pipe(catchError((error) => this.mapError(error)));
   }
 

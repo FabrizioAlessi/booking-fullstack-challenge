@@ -5,6 +5,7 @@ export type RealtimeEventType =
   | 'slot.locked'
   | 'slot.released'
   | 'booking.created'
+  | 'booking.updated'
   | 'booking.deleted';
 
 export interface RealtimeEvent {

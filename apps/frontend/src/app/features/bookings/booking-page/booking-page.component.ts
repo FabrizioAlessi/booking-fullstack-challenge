@@ -33,6 +33,9 @@ export class BookingPageComponent implements OnInit, OnDestroy {
   myLock: SlotLock | null = null;
   loading = false;
   bookingsExpanded = true;
+  /** When set, the form submits an update instead of a create. */
+  editingId: string | null = null;
+  private editingOriginal: { date: string; time_slot: string } | null = null;
 
   private eventsSub?: Subscription;
 
@@ -42,6 +45,21 @@ export class BookingPageComponent implements OnInit, OnDestroy {
     time_slot: ['', Validators.required],
     note: [''],
   });
+
+  get isEditing(): boolean {
+    return this.editingId !== null;
+  }
+
+  /** Create always needs a lock; edit keeps the original slot without one. */
+  get canSubmit(): boolean {
+    if (this.loading || this.form.invalid) {
+      return false;
+    }
+    if (this.myLock) {
+      return true;
+    }
+    return this.isKeepingOriginalSlot();
+  }
 
   ngOnInit(): void {
     this.realtime.connect();
@@ -75,6 +93,16 @@ export class BookingPageComponent implements OnInit, OnDestroy {
         return;
       }
 
+      if (event.type === 'booking.updated') {
+        // Drop by id first so a date move removes it from the current day list.
+        this.bookings = this.bookings.filter((item) => item.id !== event.payload.id);
+        if (event.payload.date === selectedDate) {
+          this.upsertBooking(event.payload);
+        }
+        this.locksBySlot.delete(event.payload.time_slot);
+        return;
+      }
+
       if (event.type === 'booking.deleted' && event.payload.date === selectedDate) {
         this.bookings = this.bookings.filter((item) => item.id !== event.payload.id);
       }
@@ -91,7 +119,11 @@ export class BookingPageComponent implements OnInit, OnDestroy {
   }
 
   slotStatus(slot: TimeSlot): SlotStatus {
-    if (this.bookings.some((booking) => booking.time_slot === slot)) {
+    // While editing, the booking's own slot must stay selectable (not BOOKED for this user).
+    const bookedByOther = this.bookings.some(
+      (booking) => booking.time_slot === slot && booking.id !== this.editingId,
+    );
+    if (bookedByOther) {
       return 'BOOKED';
     }
     if (this.myLock?.time_slot === slot) {
@@ -112,6 +144,14 @@ export class BookingPageComponent implements OnInit, OnDestroy {
       case 'LOCKED_BY_OTHER':
         return 'Bloccato';
       default:
+        if (
+          this.isEditing &&
+          this.editingOriginal?.time_slot === slot &&
+          this.form.controls.time_slot.value === slot &&
+          this.editingOriginal.date === this.form.controls.date.value
+        ) {
+          return 'Attuale';
+        }
         return 'Libero';
     }
   }
@@ -124,6 +164,22 @@ export class BookingPageComponent implements OnInit, OnDestroy {
   selectSlot(slot: TimeSlot): void {
     const status = this.slotStatus(slot);
     if (this.loading || status === 'BOOKED' || status === 'LOCKED_BY_OTHER') {
+      return;
+    }
+
+    // Edit: re-selecting the original slot needs no lock (already owned via the booking).
+    if (
+      this.isEditing &&
+      this.editingOriginal &&
+      this.editingOriginal.date === this.form.controls.date.value &&
+      this.editingOriginal.time_slot === slot
+    ) {
+      if (this.myLock) {
+        const previousLockId = this.myLock.lockId;
+        this.myLock = null;
+        this.bookingApi.releaseLock(previousLockId).subscribe({ error: () => undefined });
+      }
+      this.form.controls.time_slot.setValue(slot);
       return;
     }
 
@@ -202,11 +258,45 @@ export class BookingPageComponent implements OnInit, OnDestroy {
     this.reloadDayState();
   }
 
+  startEdit(booking: Booking): void {
+    if (this.myLock) {
+      const lockId = this.myLock.lockId;
+      this.myLock = null;
+      this.bookingApi.releaseLock(lockId).subscribe({ error: () => undefined });
+    }
+
+    this.editingId = booking.id;
+    this.editingOriginal = { date: booking.date, time_slot: booking.time_slot };
+    this.form.patchValue({
+      name: booking.name,
+      date: booking.date,
+      time_slot: booking.time_slot,
+      note: booking.note ?? '',
+    });
+    this.reloadDayState();
+  }
+
+  cancelEdit(): void {
+    if (this.myLock) {
+      const lockId = this.myLock.lockId;
+      this.myLock = null;
+      this.bookingApi.releaseLock(lockId).subscribe({ error: () => undefined });
+    }
+
+    this.editingId = null;
+    this.editingOriginal = null;
+    this.form.patchValue({ name: '', time_slot: '', note: '' });
+  }
+
   submit(): void {
-    if (this.form.invalid || !this.myLock) {
+    if (!this.canSubmit) {
       this.form.markAllAsTouched();
-      if (!this.myLock) {
-        this.toast.error('Seleziona e blocca uno slot prima di prenotare.');
+      if (!this.myLock && !this.isKeepingOriginalSlot()) {
+        this.toast.error(
+          this.isEditing
+            ? 'Seleziona uno slot (mantieni quello attuale o blocca uno libero).'
+            : 'Seleziona e blocca uno slot prima di prenotare.',
+        );
       }
       return;
     }
@@ -214,6 +304,23 @@ export class BookingPageComponent implements OnInit, OnDestroy {
     this.loading = true;
     const payload = this.form.getRawValue();
     const note = payload.note.trim();
+
+    if (this.editingId) {
+      this.submitUpdate(this.editingId, payload, note);
+      return;
+    }
+
+    this.submitCreate(payload, note);
+  }
+
+  private submitCreate(
+    payload: { name: string; date: string; time_slot: string; note: string },
+    note: string,
+  ): void {
+    if (!this.myLock) {
+      this.loading = false;
+      return;
+    }
 
     this.bookingApi
       .create({
@@ -232,25 +339,77 @@ export class BookingPageComponent implements OnInit, OnDestroy {
           this.loading = false;
         },
         error: (error: { status?: number; code?: string; message?: string }) => {
-          if (error.status === 409 || error.code === 'BOOKING_SLOT_CONFLICT') {
-            this.toast.error('Questo slot e stato appena prenotato da un altro utente.');
-            this.myLock = null;
-            this.reloadDayState();
-            return;
-          }
-          if (error.code === 'SLOT_LOCK_INVALID') {
-            this.toast.error('Il blocco dello slot e scaduto. Seleziona di nuovo lo slot.');
-            this.myLock = null;
-            this.reloadDayState();
-            return;
-          }
-          this.loading = false;
-          this.toast.error(error.message ?? 'Errore durante la creazione.');
+          this.handleMutationError(error, 'Errore durante la creazione.');
         },
       });
   }
 
+  private submitUpdate(
+    id: string,
+    payload: { name: string; date: string; time_slot: string; note: string },
+    note: string,
+  ): void {
+    const lockToRelease = this.myLock;
+
+    this.bookingApi
+      .update(id, {
+        name: payload.name.trim(),
+        date: payload.date,
+        time_slot: payload.time_slot,
+        note: note ? note : null,
+      })
+      .subscribe({
+        next: (response) => {
+          this.toast.success('Prenotazione aggiornata.');
+          this.myLock = null;
+          this.editingId = null;
+          this.editingOriginal = null;
+          this.form.patchValue({ name: '', time_slot: '', note: '' });
+
+          this.bookings = this.bookings.filter((item) => item.id !== response.data.id);
+          if (response.data.date === this.form.controls.date.value) {
+            this.upsertBooking(response.data);
+          }
+
+          if (lockToRelease) {
+            this.bookingApi.releaseLock(lockToRelease.lockId).subscribe({
+              error: () => undefined,
+            });
+          }
+
+          this.loading = false;
+        },
+        error: (error: { status?: number; code?: string; message?: string }) => {
+          this.handleMutationError(error, 'Errore durante l’aggiornamento.');
+        },
+      });
+  }
+
+  private handleMutationError(
+    error: { status?: number; code?: string; message?: string },
+    fallbackMessage: string,
+  ): void {
+    if (error.status === 409 || error.code === 'BOOKING_SLOT_CONFLICT') {
+      this.toast.error('Questo slot e stato appena prenotato da un altro utente.');
+      this.myLock = null;
+      this.reloadDayState();
+      return;
+    }
+    if (error.code === 'SLOT_LOCK_INVALID') {
+      this.toast.error('Il blocco dello slot e scaduto. Seleziona di nuovo lo slot.');
+      this.myLock = null;
+      this.reloadDayState();
+      return;
+    }
+    this.loading = false;
+    this.toast.error(error.message ?? fallbackMessage);
+  }
+
   deleteBooking(booking: Booking): void {
+    if (this.editingId === booking.id) {
+      this.cancelEdit();
+    }
+
     this.loading = true;
 
     this.bookingApi.delete(booking.id).subscribe({
@@ -291,6 +450,15 @@ export class BookingPageComponent implements OnInit, OnDestroy {
         this.toast.error(error.message ?? 'Impossibile caricare lo stato del giorno.');
       },
     });
+  }
+
+  private isKeepingOriginalSlot(): boolean {
+    return (
+      this.isEditing &&
+      this.editingOriginal !== null &&
+      this.form.controls.date.value === this.editingOriginal.date &&
+      this.form.controls.time_slot.value === this.editingOriginal.time_slot
+    );
   }
 
   private upsertBooking(booking: Booking): void {
