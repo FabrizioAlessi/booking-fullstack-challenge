@@ -1,81 +1,215 @@
-<section class="booking-page">
-  <header class="booking-page__header">
-    <h1>Booking Challenge</h1>
-    <p>
+<section class="mx-auto grid max-w-[720px] gap-6 px-5 pb-12 pt-8">
+  <header>
+    <div class="mb-1.5 flex flex-wrap items-center justify-between gap-2.5">
+      <h1 class="m-0 text-[2.25rem] font-bold text-ink">Booking Challenge</h1>
+      @if (form.controls.date.value; as selectedDate) {
+        <time
+          class="inline-flex items-center rounded-md border border-brand-200 bg-brand-50 px-3 py-1 text-base font-medium text-brand-700"
+          [attr.datetime]="selectedDate"
+        >
+          {{ formatSelectedDate(selectedDate) }}
+        </time>
+      }
+    </div>
+    <p class="m-0 text-ink-secondary">
       Seleziona una data, blocca uno slot libero e crea la prenotazione. Gli aggiornamenti
       arrivano in tempo reale via SSE.
     </p>
   </header>
 
-  <form class="booking-form" [formGroup]="form" (ngSubmit)="submit()">
-    <label>
+  <form class="grid gap-4" [formGroup]="form" (ngSubmit)="submit()">
+    <label class="grid gap-1.5 font-semibold text-ink">
       Data
-      <input type="date" formControlName="date" (change)="onDateChange()" />
+      <input
+        class="rounded border border-line-strong bg-surface-raised px-2.5 py-2 font-inherit"
+        type="date"
+        formControlName="date"
+        (change)="onDateChange()"
+      />
     </label>
 
-    <label>
+    <label class="grid gap-1.5 font-semibold text-ink">
       Nome
-      <input type="text" formControlName="name" autocomplete="name" />
+      <input
+        class="rounded border border-line-strong bg-surface-raised px-2.5 py-2 font-inherit"
+        type="text"
+        formControlName="name"
+        autocomplete="name"
+      />
     </label>
 
-    <label>
+    <label class="grid gap-1.5 font-semibold text-ink">
       Nota (opzionale)
-      <input type="text" formControlName="note" />
+      <input
+        class="rounded border border-line-strong bg-surface-raised px-2.5 py-2 font-inherit"
+        type="text"
+        formControlName="note"
+      />
     </label>
 
-    <fieldset class="slot-list">
-      <legend>Slot</legend>
-      <div class="slot-list__grid">
+    <fieldset class="m-0 border-0 p-0">
+      <legend class="mb-2 flex items-center gap-1.5 font-semibold text-ink">
+        Slot
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="1.5"
+          stroke="currentColor"
+          class="size-6"
+          aria-hidden="true"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+          />
+        </svg>
+      </legend>
+      <div class="grid grid-cols-[repeat(auto-fill,minmax(7.5rem,1fr))] gap-2.5">
         @for (slot of timeSlots; track slot) {
           <button
             type="button"
-            class="slot"
-            [class.slot--selected]="form.controls.time_slot.value === slot"
-            [class.slot--booked]="slotStatus(slot) === 'BOOKED'"
-            [class.slot--mine]="slotStatus(slot) === 'LOCKED_BY_ME'"
-            [class.slot--locked]="slotStatus(slot) === 'LOCKED_BY_OTHER'"
+            class="grid gap-0.5 rounded border border-line-focus bg-surface-raised px-2 py-2.5 font-inherit cursor-pointer disabled:cursor-not-allowed disabled:bg-surface-sunken disabled:opacity-55"
+            [class.border-brand-500]="
+              form.controls.time_slot.value === slot || slotStatus(slot) === 'LOCKED_BY_ME'
+            "
+            [class.ring-1]="
+              form.controls.time_slot.value === slot || slotStatus(slot) === 'LOCKED_BY_ME'
+            "
+            [class.ring-inset]="
+              form.controls.time_slot.value === slot || slotStatus(slot) === 'LOCKED_BY_ME'
+            "
+            [class.ring-brand-500]="
+              form.controls.time_slot.value === slot || slotStatus(slot) === 'LOCKED_BY_ME'
+            "
+            [class.bg-brand-50]="slotStatus(slot) === 'LOCKED_BY_ME'"
+            [class.border-warning]="slotStatus(slot) === 'LOCKED_BY_OTHER'"
+            [class.bg-warning-soft]="slotStatus(slot) === 'LOCKED_BY_OTHER'"
+            [class.cursor-not-allowed]="slotStatus(slot) === 'LOCKED_BY_OTHER'"
+            [class.opacity-70]="slotStatus(slot) === 'LOCKED_BY_OTHER'"
+            [class.bg-surface-sunken]="slotStatus(slot) === 'BOOKED'"
+            [class.opacity-55]="slotStatus(slot) === 'BOOKED'"
             [disabled]="isSlotDisabled(slot)"
             (click)="selectSlot(slot)"
           >
             {{ slot }}
-            <span>{{ slotLabel(slot) }}</span>
+            <span class="text-[0.8rem] text-ink-tertiary">{{ slotLabel(slot) }}</span>
           </button>
         }
       </div>
     </fieldset>
 
-    <button type="submit" [disabled]="loading || form.invalid || !myLock">
+    <button
+      type="submit"
+      class="inline-flex items-center gap-1.5 justify-self-start rounded border-0 bg-brand-500 px-4 py-2.5 font-inherit text-ink-inverse cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+      [disabled]="loading || form.invalid || !myLock"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke-width="1.5"
+        stroke="currentColor"
+        class="size-6"
+        aria-hidden="true"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="m4.5 12.75 6 6 9-13.5"
+        />
+      </svg>
       {{ loading ? 'Attendere…' : 'Prenota' }}
     </button>
   </form>
 
   @if (feedback) {
-    <p class="feedback feedback--ok" role="status">{{ feedback }}</p>
+    <p class="m-0 rounded bg-success-soft px-3.5 py-3 text-success" role="status">
+      {{ feedback }}
+    </p>
   }
   @if (errorMessage) {
-    <p class="feedback feedback--error" role="alert">{{ errorMessage }}</p>
+    <p class="m-0 rounded bg-danger-50 px-3.5 py-3 text-danger-700" role="alert">
+      {{ errorMessage }}
+    </p>
   }
 
-  <section class="booking-list">
-    <h2>Prenotazioni del giorno</h2>
-    @if (bookings.length === 0) {
-      <p>Nessuna prenotazione per questa data.</p>
-    } @else {
-      <ul>
-        @for (booking of bookings; track booking.id) {
-          <li>
-            <div>
-              <strong>{{ booking.time_slot }}</strong> — {{ booking.name }}
-              @if (booking.note) {
-                <span class="note">{{ booking.note }}</span>
-              }
-            </div>
-            <button type="button" [disabled]="loading" (click)="deleteBooking(booking)">
-              Elimina
-            </button>
-          </li>
+  <section class="rounded-lg border border-line bg-surface-raised shadow-md">
+    <button
+      type="button"
+      class="flex w-full items-center justify-between gap-3 rounded-lg border-0 bg-transparent px-4 py-3.5 text-left font-inherit cursor-pointer"
+      [attr.aria-expanded]="bookingsExpanded"
+      aria-controls="day-bookings-panel"
+      (click)="bookingsExpanded = !bookingsExpanded"
+    >
+      <span class="flex items-center gap-2.5">
+        <h2 class="m-0 text-xl font-semibold text-ink">Prenotazioni del giorno</h2>
+        <span
+          class="inline-flex min-w-6 items-center justify-center rounded-md border border-brand-200 bg-brand-50 px-2 py-0.5 text-sm font-medium text-brand-700"
+        >
+          {{ bookings.length }}
+        </span>
+      </span>
+      <svg
+        class="h-5 w-5 shrink-0 text-ink-tertiary transition-transform duration-200"
+        [class.rotate-180]="bookingsExpanded"
+        viewBox="0 0 20 20"
+        fill="currentColor"
+        aria-hidden="true"
+      >
+        <path
+          fill-rule="evenodd"
+          d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+          clip-rule="evenodd"
+        />
+      </svg>
+    </button>
+
+    @if (bookingsExpanded) {
+      <div id="day-bookings-panel" class="border-t border-line px-4 pb-4 pt-3">
+        @if (bookings.length === 0) {
+          <p class="m-0 text-ink-secondary">Nessuna prenotazione per questa data.</p>
+        } @else {
+          <ul class="m-0 grid list-none gap-2.5 p-0">
+            @for (booking of bookings; track booking.id) {
+              <li
+                class="flex items-center justify-between gap-4 border-b border-line py-2.5 text-ink last:border-b-0"
+              >
+                <div>
+                  <strong>{{ booking.time_slot }}</strong> — {{ booking.name }}
+                  @if (booking.note) {
+                    <span class="block text-[0.9rem] text-ink-tertiary">{{ booking.note }}</span>
+                  }
+                </div>
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-1.5 rounded border-0 bg-danger-500 px-4 py-2.5 font-inherit text-ink-inverse cursor-pointer hover:bg-danger-600 disabled:cursor-not-allowed disabled:opacity-60"
+                  [disabled]="loading"
+                  (click)="deleteBooking(booking)"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke-width="1.5"
+                    stroke="currentColor"
+                    class="size-6"
+                    aria-hidden="true"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"
+                    />
+                  </svg>
+                  Elimina
+                </button>
+              </li>
+            }
+          </ul>
         }
-      </ul>
+      </div>
     }
   </section>
 </section>

@@ -31,6 +31,7 @@ export class BookingPageComponent implements OnInit, OnDestroy {
   loading = false;
   feedback: string | null = null;
   errorMessage: string | null = null;
+  bookingsExpanded = true;
 
   private eventsSub?: Subscription;
 
@@ -304,6 +305,19 @@ export class BookingPageComponent implements OnInit, OnDestroy {
     this.bookings = [...without, booking].sort((a, b) =>
       a.time_slot.localeCompare(b.time_slot),
     );
+  }
+
+  formatSelectedDate(isoDate: string): string {
+    // Parse YYYY-MM-DD in locale senza UTC shift (new Date(iso) a mezzanotte UTC)
+    const [year, month, day] = isoDate.split('-').map(Number);
+    if (!year || !month || !day) {
+      return isoDate;
+    }
+    return new Date(year, month - 1, day).toLocaleDateString('it-IT', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
   }
 
   private todayIso(): string {

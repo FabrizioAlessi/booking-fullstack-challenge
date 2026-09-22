@@ -1,0 +1,9 @@
+@import "tailwindcss";
+@config "../tailwind.config.js";
+
+@layer base {
+  body {
+    @apply min-h-screen bg-background text-ink antialiased;
+    font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  }
+}
