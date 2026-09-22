@@ -29,10 +29,6 @@ class RealtimeHub {
       client.write(chunk);
     }
   }
-
-  clientCount(): number {
-    return this.clients.size;
-  }
 }
 
 export const realtimeHub = new RealtimeHub();
