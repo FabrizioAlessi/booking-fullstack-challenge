@@ -1,3 +1,7 @@
+@if (loading) {
+  <app-loader [overlay]="true" />
+}
+
 <section class="mx-auto grid max-w-[720px] gap-6 px-5 pb-12 pt-8">
   <header>
     <div class="mb-1.5 flex flex-wrap items-center justify-between gap-2.5">
@@ -120,20 +124,9 @@
           d="m4.5 12.75 6 6 9-13.5"
         />
       </svg>
-      {{ loading ? 'Attendere…' : 'Prenota' }}
+      Prenota
     </button>
   </form>
-
-  @if (feedback) {
-    <p class="m-0 rounded bg-success-soft px-3.5 py-3 text-success" role="status">
-      {{ feedback }}
-    </p>
-  }
-  @if (errorMessage) {
-    <p class="m-0 rounded bg-danger-50 px-3.5 py-3 text-danger-700" role="alert">
-      {{ errorMessage }}
-    </p>
-  }
 
   <section class="rounded-lg border border-line bg-surface-raised shadow-md">
     <button

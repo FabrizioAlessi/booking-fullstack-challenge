@@ -4,6 +4,8 @@ import { CommonModule } from '@angular/common';
 import { Subscription, forkJoin } from 'rxjs';
 import { BookingApiService } from '../../../core/services/booking-api.service';
 import { RealtimeEventsService } from '../../../core/services/realtime-events.service';
+import { ToastService } from '../../../core/services/toast.service';
+import { LoaderComponent } from '../../../shared/components/loader/loader.component';
 import {
   Booking,
   SlotLock,
@@ -15,7 +17,7 @@ import {
 @Component({
   selector: 'app-booking-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, LoaderComponent],
   templateUrl: './booking-page.component.html',
   styleUrl: './booking-page.component.scss',
 })
@@ -23,14 +25,13 @@ export class BookingPageComponent implements OnInit, OnDestroy {
   private readonly fb = inject(FormBuilder);
   private readonly bookingApi = inject(BookingApiService);
   private readonly realtime = inject(RealtimeEventsService);
+  private readonly toast = inject(ToastService);
 
   readonly timeSlots = TIME_SLOTS;
   bookings: Booking[] = [];
   locksBySlot = new Map<string, SlotLock>();
   myLock: SlotLock | null = null;
   loading = false;
-  feedback: string | null = null;
-  errorMessage: string | null = null;
   bookingsExpanded = true;
 
   private eventsSub?: Subscription;
@@ -133,7 +134,6 @@ export class BookingPageComponent implements OnInit, OnDestroy {
     }
 
     this.loading = true;
-    this.errorMessage = null;
     const previousLock = this.myLock;
     const date = this.form.controls.date.value;
 
@@ -150,11 +150,11 @@ export class BookingPageComponent implements OnInit, OnDestroy {
       error: (error: { status?: number; code?: string; message?: string }) => {
         this.loading = false;
         if (error.status === 409 || error.code === 'SLOT_LOCK_CONFLICT') {
-          this.errorMessage = 'Questo slot e temporaneamente bloccato da un altro utente.';
+          this.toast.error('Questo slot e temporaneamente bloccato da un altro utente.');
           this.reloadDayState();
           return;
         }
-        this.errorMessage = error.message ?? 'Impossibile bloccare lo slot.';
+        this.toast.error(error.message ?? 'Impossibile bloccare lo slot.');
       },
     });
   }
@@ -165,7 +165,6 @@ export class BookingPageComponent implements OnInit, OnDestroy {
     }
 
     this.loading = true;
-    this.errorMessage = null;
     const lockId = this.myLock.lockId;
     const timeSlot = this.myLock.time_slot;
 
@@ -179,7 +178,7 @@ export class BookingPageComponent implements OnInit, OnDestroy {
       },
       error: (error: { message?: string }) => {
         this.loading = false;
-        this.errorMessage = error.message ?? 'Impossibile rilasciare lo slot.';
+        this.toast.error(error.message ?? 'Impossibile rilasciare lo slot.');
       },
     });
   }
@@ -204,13 +203,10 @@ export class BookingPageComponent implements OnInit, OnDestroy {
   }
 
   submit(): void {
-    this.feedback = null;
-    this.errorMessage = null;
-
     if (this.form.invalid || !this.myLock) {
       this.form.markAllAsTouched();
       if (!this.myLock) {
-        this.errorMessage = 'Seleziona e blocca uno slot prima di prenotare.';
+        this.toast.error('Seleziona e blocca uno slot prima di prenotare.');
       }
       return;
     }
@@ -229,7 +225,7 @@ export class BookingPageComponent implements OnInit, OnDestroy {
       })
       .subscribe({
         next: (response) => {
-          this.feedback = 'Prenotazione creata.';
+          this.toast.success('Prenotazione creata.');
           this.myLock = null;
           this.form.patchValue({ name: '', time_slot: '', note: '' });
           this.upsertBooking(response.data);
@@ -237,38 +233,35 @@ export class BookingPageComponent implements OnInit, OnDestroy {
         },
         error: (error: { status?: number; code?: string; message?: string }) => {
           if (error.status === 409 || error.code === 'BOOKING_SLOT_CONFLICT') {
-            this.errorMessage =
-              'Questo slot e stato appena prenotato da un altro utente.';
+            this.toast.error('Questo slot e stato appena prenotato da un altro utente.');
             this.myLock = null;
             this.reloadDayState();
             return;
           }
           if (error.code === 'SLOT_LOCK_INVALID') {
-            this.errorMessage = 'Il blocco dello slot e scaduto. Seleziona di nuovo lo slot.';
+            this.toast.error('Il blocco dello slot e scaduto. Seleziona di nuovo lo slot.');
             this.myLock = null;
             this.reloadDayState();
             return;
           }
           this.loading = false;
-          this.errorMessage = error.message ?? 'Errore durante la creazione.';
+          this.toast.error(error.message ?? 'Errore durante la creazione.');
         },
       });
   }
 
   deleteBooking(booking: Booking): void {
     this.loading = true;
-    this.feedback = null;
-    this.errorMessage = null;
 
     this.bookingApi.delete(booking.id).subscribe({
       next: () => {
-        this.feedback = 'Prenotazione eliminata.';
+        this.toast.success('Prenotazione eliminata.');
         this.bookings = this.bookings.filter((item) => item.id !== booking.id);
         this.loading = false;
       },
       error: (error: { message?: string }) => {
         this.loading = false;
-        this.errorMessage = error.message ?? 'Errore durante l’eliminazione.';
+        this.toast.error(error.message ?? 'Errore durante l’eliminazione.');
       },
     });
   }
@@ -295,7 +288,7 @@ export class BookingPageComponent implements OnInit, OnDestroy {
       },
       error: (error: { message?: string }) => {
         this.loading = false;
-        this.errorMessage = error.message ?? 'Impossibile caricare lo stato del giorno.';
+        this.toast.error(error.message ?? 'Impossibile caricare lo stato del giorno.');
       },
     });
   }
