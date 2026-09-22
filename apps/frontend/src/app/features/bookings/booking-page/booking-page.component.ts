@@ -106,7 +106,7 @@ export class BookingPageComponent implements OnInit, OnDestroy {
       case 'BOOKED':
         return 'Occupato';
       case 'LOCKED_BY_ME':
-        return 'Bloccato da te';
+        return 'Selezionato';
       case 'LOCKED_BY_OTHER':
         return 'Bloccato';
       default:
@@ -125,8 +125,9 @@ export class BookingPageComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (status === 'LOCKED_BY_ME') {
-      this.form.controls.time_slot.setValue(slot);
+    // Toggle: secondo click sullo slot già bloccato da me → rilascio + SSE slot.released
+    if (status === 'LOCKED_BY_ME' && this.myLock) {
+      this.releaseMyLock();
       return;
     }
 
@@ -153,6 +154,31 @@ export class BookingPageComponent implements OnInit, OnDestroy {
           return;
         }
         this.errorMessage = error.message ?? 'Impossibile bloccare lo slot.';
+      },
+    });
+  }
+
+  private releaseMyLock(): void {
+    if (!this.myLock) {
+      return;
+    }
+
+    this.loading = true;
+    this.errorMessage = null;
+    const lockId = this.myLock.lockId;
+    const timeSlot = this.myLock.time_slot;
+
+    this.bookingApi.releaseLock(lockId).subscribe({
+      next: () => {
+        this.myLock = null;
+        if (this.form.controls.time_slot.value === timeSlot) {
+          this.form.controls.time_slot.setValue('');
+        }
+        this.loading = false;
+      },
+      error: (error: { message?: string }) => {
+        this.loading = false;
+        this.errorMessage = error.message ?? 'Impossibile rilasciare lo slot.';
       },
     });
   }
